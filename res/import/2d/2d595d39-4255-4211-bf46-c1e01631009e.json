@@ -1,0 +1,17 @@
+{
+  "__type__": "cc.JsonAsset",
+  "_name": "SkillConfig",
+  "json": {
+    "data": [
+      {
+        "id": 0,
+        "name": "测试技能",
+        "des": "测试技能描述",
+        "icon": "b",
+        "script_name": "",
+        "type": 0,
+        "param": []
+      }
+    ]
+  }
+}
