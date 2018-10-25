@@ -819,6 +819,7 @@ window.__require = function e(t, n, r) {
       LocalStorageEnum["EDITABLE_UI_COUNT"] = "2_";
       LocalStorageEnum["EDITABLE_UI_PREFIX"] = "3_";
       LocalStorageEnum["EDITABLE_CONTAINER_PREFIX"] = "4_";
+      LocalStorageEnum["ENABLE_LOG"] = "5_";
     })(LocalStorageEnum = exports.LocalStorageEnum || (exports.LocalStorageEnum = {}));
     cc._RF.pop();
   }, {} ],
@@ -1085,16 +1086,18 @@ window.__require = function e(t, n, r) {
       function MovementTest() {
         var _this = null !== _super && _super.apply(this, arguments) || this;
         _this.speed = 1;
-        _this.v = cc.Vec2.ZERO;
         return _this;
       }
+      MovementTest_1 = MovementTest;
       MovementTest.prototype.start = function() {
         return __awaiter(this, void 0, void 0, function() {
-          var createRoleOption, success, _a, _b;
+          var inited, createRoleOption, success, _a, _b;
           var _this = this;
           return __generator(this, function(_c) {
             switch (_c.label) {
              case 0:
+              this.node.position = cc.Vec2.ZERO;
+              inited = false;
               Logger.log("start", "MovementTest");
               this.pressing_w = false;
               this.pressing_a = false;
@@ -1117,15 +1120,29 @@ window.__require = function e(t, n, r) {
 
              case 3:
               success = _c.sent();
-              if (true == success) {
-                Logger.log("UseRole success\uff01", "MovementTest");
-                SimCivil.Contract.IViewSynchronizer.RegisterViewSync(function(viewChanged) {
-                  viewChanged = viewChanged;
-                });
-              } else Logger.log("UseRole faild", "MovementTest");
-              this.schedule(function() {
-                return _this.logicUpdate();
-              }, .5);
+              if (!(true == success)) return [ 3, 5 ];
+              Logger.log("UseRole success\uff01", "MovementTest");
+              return [ 4, SimCivil.Contract.IViewSynchronizer.RegisterViewSync(function(viewChanged) {
+                viewChanged = viewChanged;
+                if (false == inited) {
+                  _this.node.position = _this.serverPosToUIPos(new cc.Vec2(viewChanged.Position.Item1, viewChanged.Position.Item2));
+                  inited = true;
+                  _this.schedule(function() {
+                    return _this.logicUpdate();
+                  }, MovementTest_1.deltaTimePreFrame);
+                }
+                Logger.info(viewChanged);
+              }) ];
+
+             case 4:
+              _c.sent();
+              return [ 3, 6 ];
+
+             case 5:
+              Logger.log("UseRole faild", "MovementTest");
+              _c.label = 6;
+
+             case 6:
               cc.systemEvent.on(cc.SystemEvent.EventType.KEY_DOWN, this.onKeyDown, this);
               cc.systemEvent.on(cc.SystemEvent.EventType.KEY_UP, this.onKeyUp, this);
               return [ 2 ];
@@ -1134,22 +1151,27 @@ window.__require = function e(t, n, r) {
         });
       };
       MovementTest.prototype.logicUpdate = function() {
+        Logger.log(this.node.position, name);
+        var serverPos = this.uiPosToServerPos(this.node.position);
+        SimCivil.Contract.IPlayerController.MoveTo(new SimCivil.Contract.ValueTuple({
+          Item1: serverPos.x,
+          Item2: serverPos.y
+        }), new Date());
+      };
+      MovementTest.prototype.update = function(dt) {
         var v = new cc.Vec2(0, 0);
         this.pressing_w && v.addSelf(cc.Vec2.UP);
         this.pressing_a && v.subSelf(cc.Vec2.RIGHT);
         this.pressing_s && v.subSelf(cc.Vec2.UP);
         this.pressing_d && v.addSelf(cc.Vec2.RIGHT);
         v.normalizeSelf();
-        Logger.log(this.node.position, name);
-        Logger.log(v, name);
-        this.v = v;
-        SimCivil.Contract.IPlayerController.MoveTo(new SimCivil.Contract.ValueTuple({
-          Item1: this.node.position.x,
-          Item2: this.node.position.y
-        }), new Date());
+        this.node.position = this.node.position.add(this.serverPosToUIPos(v.mul(this.speed * dt)));
       };
-      MovementTest.prototype.update = function(dt) {
-        this.node.position = this.node.position.add(this.v.mul(this.speed * dt * 100));
+      MovementTest.prototype.uiPosToServerPos = function(pos) {
+        return new cc.Vec2(pos.x / 100, pos.y / 100);
+      };
+      MovementTest.prototype.serverPosToUIPos = function(pos) {
+        return pos.mul(100);
       };
       MovementTest.prototype.onKeyDown = function(event) {
         switch (event.keyCode) {
@@ -1187,7 +1209,9 @@ window.__require = function e(t, n, r) {
           this.pressing_d = false;
         }
       };
-      MovementTest = __decorate([ ccclass ], MovementTest);
+      var MovementTest_1;
+      MovementTest.deltaTimePreFrame = 1;
+      MovementTest = MovementTest_1 = __decorate([ ccclass ], MovementTest);
       return MovementTest;
     }(cc.Component);
     exports.default = MovementTest;

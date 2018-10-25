@@ -333,10 +333,81 @@ var Tools;
 })(Tools || (Tools = {}));
 var Tools;
 (function (Tools) {
+    /**
+     * 用于从本地读写数据
+     */
+    var LocalStorageUtils = /** @class */ (function () {
+        function LocalStorageUtils() {
+        }
+        LocalStorageUtils.setNumber = function (key, value) {
+            cc.sys.localStorage.setItem(key, value.toString());
+        };
+        LocalStorageUtils.setString = function (key, value) {
+            cc.sys.localStorage.setItem(key, value);
+        };
+        LocalStorageUtils.setObject = function (key, value) {
+            cc.sys.localStorage.setItem(key, JSON.stringify(value));
+        };
+        LocalStorageUtils.getNumber = function (key, value) {
+            if (value === void 0) { value = 0; }
+            var ret = cc.sys.localStorage.getItem(key);
+            if (ret == null || ret == undefined)
+                return value;
+            return +ret;
+        };
+        LocalStorageUtils.getString = function (key, value) {
+            if (value === void 0) { value = null; }
+            var ret = cc.sys.localStorage.getItem(key);
+            if (ret == null || ret == undefined)
+                return value;
+            return ret;
+        };
+        LocalStorageUtils.getObject = function (key, value) {
+            if (value === void 0) { value = null; }
+            var ret = cc.sys.localStorage.getItem(key);
+            if (ret == null || ret == undefined)
+                return value;
+            return JSON.parse(ret);
+        };
+        LocalStorageUtils.loadStorageObject = function (key) {
+            var ret = LocalStorageUtils.getObject(key);
+            if (ret == null || ret == undefined)
+                return null;
+            ret.Key = Tools.LocalStorageBase.prototype.Key;
+            ret.Save = Tools.LocalStorageBase.prototype.Save;
+            return ret;
+        };
+        // public static loadStorageObject<T extends LocalStorageBase>(): T{
+        //     return <T>LocalStorageUtils.getObject();
+        // }
+        LocalStorageUtils.saveStorageObject = function (obj) {
+            obj.Save();
+        };
+        return LocalStorageUtils;
+    }());
+    Tools.LocalStorageUtils = LocalStorageUtils;
+})(Tools || (Tools = {}));
+window.LocalStorageUtils = Tools.LocalStorageUtils;
+///<reference path="./LocalStorageUtils.ts"/>
+var Tools;
+(function (Tools) {
     var Logger = /** @class */ (function () {
         function Logger() {
         }
+        Object.defineProperty(Logger, "EnableLog", {
+            get: function () {
+                return this._enableLog;
+            },
+            set: function (value) {
+                this._enableLog = value;
+                Tools.LocalStorageUtils.setNumber("5_", value ? 1 : 0);
+            },
+            enumerable: true,
+            configurable: true
+        });
         Logger.log = function (arg, tag) {
+            if (this._enableLog == false)
+                return;
             if (tag != null && tag != undefined) {
                 console.log("[" + tag + "] [" + TimeManager.Instance.realTimeSinceStartScene.toFixed(3) + "] " + arg + " ");
             }
@@ -345,6 +416,8 @@ var Tools;
             }
         };
         Logger.warn = function (arg, tag) {
+            if (this._enableLog == false)
+                return;
             if (tag != null && tag != undefined) {
                 console.warn("[" + tag + "] [" + TimeManager.Instance.realTimeSinceStartScene.toFixed(3) + "] " + arg);
             }
@@ -353,6 +426,8 @@ var Tools;
             }
         };
         Logger.error = function (arg, tag) {
+            if (this._enableLog == false)
+                return;
             if (tag != null && tag != undefined) {
                 console.error("[" + tag + "] [" + TimeManager.Instance.realTimeSinceStartScene.toFixed(3) + "] " + arg);
             }
@@ -361,8 +436,14 @@ var Tools;
             }
         };
         Logger.info = function (arg) {
+            if (this._enableLog == false)
+                return;
             console.info(arg);
         };
+        /**
+        * 是否开启log
+        */
+        Logger._enableLog = Tools.LocalStorageUtils.getNumber("5_", 0) == 1;
         return Logger;
     }());
     Tools.Logger = Logger;
@@ -1324,9 +1405,9 @@ var SimCivil;
     (function (Contract) {
         var ValueTuple = /** @class */ (function () {
             function ValueTuple(value) {
-                this.$type = "System.ValueTuple`2[[System.Single, System.Private.CoreLib],[System.Single, System.Private.CoreLib]], System.Private.CoreLib";
-                this.Item1 = value.Item1;
-                this.Item2 = value.Item2;
+                this.$type = "System.ValueTuple`2[[System.Single, mscorlib],[System.Single, mscorlib]], System.ValueTuple";
+                this.Item1 = +value.Item1.toPrecision(6);
+                this.Item2 = +value.Item2.toPrecision(6);
             }
             return ValueTuple;
         }());
@@ -1350,52 +1431,6 @@ var Tools;
     Tools.LocalStorageBase = LocalStorageBase;
 })(Tools || (Tools = {}));
 window.LocalStorageBase = Tools.LocalStorageBase;
-var Tools;
-(function (Tools) {
-    /**
-     * 用于从本地读写数据
-     */
-    var LocalStorageUtils = /** @class */ (function () {
-        function LocalStorageUtils() {
-        }
-        LocalStorageUtils.setNumber = function (key, value) {
-            cc.sys.localStorage.setItem(key, value.toString());
-        };
-        LocalStorageUtils.setString = function (key, value) {
-            cc.sys.localStorage.setItem(key, value);
-        };
-        LocalStorageUtils.setObject = function (key, value) {
-            cc.sys.localStorage.setItem(key, JSON.stringify(value));
-        };
-        LocalStorageUtils.getNumber = function (key) {
-            var ret = cc.sys.localStorage.getItem(key);
-            return +ret;
-        };
-        LocalStorageUtils.getString = function (key) {
-            return cc.sys.localStorage.getItem(key);
-        };
-        LocalStorageUtils.getObject = function (key) {
-            return JSON.parse(cc.sys.localStorage.getItem(key));
-        };
-        LocalStorageUtils.loadStorageObject = function (key) {
-            var ret = LocalStorageUtils.getObject(key);
-            if (ret == null || ret == undefined)
-                return null;
-            ret.Key = Tools.LocalStorageBase.prototype.Key;
-            ret.Save = Tools.LocalStorageBase.prototype.Save;
-            return ret;
-        };
-        // public static loadStorageObject<T extends LocalStorageBase>(): T{
-        //     return <T>LocalStorageUtils.getObject();
-        // }
-        LocalStorageUtils.saveStorageObject = function (obj) {
-            obj.Save();
-        };
-        return LocalStorageUtils;
-    }());
-    Tools.LocalStorageUtils = LocalStorageUtils;
-})(Tools || (Tools = {}));
-var LocalStorageUtils = Tools.LocalStorageUtils;
 var Tools;
 (function (Tools) {
     var QueueNode = /** @class */ (function () {
