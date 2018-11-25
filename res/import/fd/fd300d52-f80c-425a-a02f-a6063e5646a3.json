@@ -1,0 +1,27 @@
+{
+  "__type__": "cc.SpriteFrame",
+  "content": {
+    "name": "map_grass_path",
+    "texture": "74xSyxtudLV4cT1RBXq5h2",
+    "rect": [
+      2,
+      2,
+      460,
+      460
+    ],
+    "offset": [
+      -24,
+      24
+    ],
+    "originalSize": [
+      512,
+      512
+    ],
+    "capInsets": [
+      0,
+      0,
+      0,
+      0
+    ]
+  }
+}

@@ -1,0 +1,27 @@
+{
+  "__type__": "cc.SpriteFrame",
+  "content": {
+    "name": "map_grass_up",
+    "texture": "26zZ7Unt5Hw6F3Ixm4kWCp",
+    "rect": [
+      2,
+      2,
+      196,
+      460
+    ],
+    "offset": [
+      -28,
+      24
+    ],
+    "originalSize": [
+      256,
+      512
+    ],
+    "capInsets": [
+      0,
+      0,
+      0,
+      0
+    ]
+  }
+}

@@ -1,0 +1,27 @@
+{
+  "__type__": "cc.SpriteFrame",
+  "content": {
+    "name": "map_water_grass",
+    "texture": "9107EWFGVJbKibYHBJJzKY",
+    "rect": [
+      2,
+      2,
+      460,
+      460
+    ],
+    "offset": [
+      -24,
+      24
+    ],
+    "originalSize": [
+      512,
+      512
+    ],
+    "capInsets": [
+      0,
+      0,
+      0,
+      0
+    ]
+  }
+}
