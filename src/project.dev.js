@@ -1773,6 +1773,10 @@ window.__require = function e(t, n, r) {
                case 3:
                 _a.GotRole = _d.sent();
                 true == EcsUtility_1.EcsUtility.GotRole ? ResourcesManager_1.ResourcesManager.Instance.loadRes(GloableConstantUtils_1.GloableConstantUtils.GamePrefabPath.concat("Player"), function(error, res) {
+                  if (error) {
+                    Logger.log(error.message);
+                    return;
+                  }
                   var node = cc.instantiate(res);
                   node.setParent(cc.Canvas.instance.node);
                 }) : Logger.log("UseRole faild", "MovementTest");

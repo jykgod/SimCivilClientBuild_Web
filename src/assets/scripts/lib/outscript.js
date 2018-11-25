@@ -1282,7 +1282,7 @@ var RpcClient = /** @class */ (function () {
         //     Tools.Logger.error("Sorry, this browser does not support TextEncoder...", "RPC");
         //     return;
         // }
-        Tools.Logger.log(JSON.stringify(json), "RPC");
+        // Tools.Logger.log(JSON.stringify(json), "RPC");
         //Tools.Logger.info(json);
         // let enc = new TextEncoder();
         // let str = JSON.stringify(json);
