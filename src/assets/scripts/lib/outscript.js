@@ -151,22 +151,266 @@ var UIAnimationUtils = /** @class */ (function () {
 }());
 var ECS;
 (function (ECS) {
-    var ComponentSystem = /** @class */ (function () {
-        function ComponentSystem() {
+    var ScriptBehaviourManager = /** @class */ (function () {
+        function ScriptBehaviourManager() {
         }
-        return ComponentSystem;
+        Object.defineProperty(ScriptBehaviourManager.prototype, "entities", {
+            get: function () {
+                return this._entities;
+            },
+            set: function (v) {
+                this._entities = v;
+            },
+            enumerable: true,
+            configurable: true
+        });
+        ScriptBehaviourManager.prototype.Update = function () {
+            //...
+            this.InternalUpdate();
+            //...
+        };
+        return ScriptBehaviourManager;
     }());
-    ECS.ComponentSystem = ComponentSystem;
+    ECS.ScriptBehaviourManager = ScriptBehaviourManager;
+    Object.seal(ScriptBehaviourManager.prototype.Update);
 })(ECS || (ECS = {}));
+if (!window.ECS)
+    window.ECS = {};
+window.ECS.ScriptBehaviourManager = ECS.ScriptBehaviourManager;
+/// <reference path="./ScriptBehaviourManager.ts"/>
 var ECS;
 (function (ECS) {
-    var SystemManager = /** @class */ (function () {
-        function SystemManager() {
+    /**
+     * 系统
+     *
+     * 注：
+     * 1.禁止包含命名为ctypes和cnames的成员
+     * 2.声明组件数组变量时需要使用装饰器inject
+     * 例:
+     * @ECS.inject(TestComponent)
+     * x: Array<TestComponent>;
+     * @ECS.inject(PositionComponent)
+     * y: Array<PositionComponent>;
+     * 需要注意的是这里声明的数组（上面例子中的x和y）每次onupdate触发的时候会是一个新的实例。
+     * 3.如果需要获取系统关联的实体，可以直接在onupdate时通过entities变量取得
+     */
+    var ComponentSystem = /** @class */ (function (_super) {
+        __extends(ComponentSystem, _super);
+        function ComponentSystem() {
+            return _super !== null && _super.apply(this, arguments) || this;
         }
-        return SystemManager;
-    }());
-    ECS.SystemManager = SystemManager;
+        ComponentSystem.prototype.InternalUpdate = function () {
+            this.OnUpdate();
+        };
+        ComponentSystem.prototype.OnDestroy = function () {
+        };
+        ComponentSystem.prototype.OnStart = function () {
+        };
+        return ComponentSystem;
+    }(ECS.ScriptBehaviourManager));
+    ECS.ComponentSystem = ComponentSystem;
+    Object.seal(ComponentSystem.prototype.InternalUpdate);
+    function inject(type) {
+        return function (target, propertyName) {
+            if (target.ctypes == undefined) {
+                target.ctypes = new Array();
+                target.cnames = new Array();
+            }
+            target.ctypes.push(type);
+            target.cnames.push(propertyName);
+        };
+    }
+    ECS.inject = inject;
 })(ECS || (ECS = {}));
+if (!window.ECS)
+    window.ECS = {};
+window.ECS.ComponentSystem = ECS.ComponentSystem;
+window.ECS.inject = ECS.inject;
+var ECS;
+(function (ECS) {
+    var EntitisManager = /** @class */ (function () {
+        function EntitisManager() {
+            this._entitiIDTop = 0;
+            this._entities = new Array();
+            this._components = new Array();
+            this._entitisComponents = new Array();
+        }
+        /**
+         * 给实体添加组件(暂时不对重复添加组件做处理)
+         * @param entity 实体
+         * @param componentDataType 组件
+         */
+        EntitisManager.prototype.addComponent = function (entity) {
+            var componentDataType = [];
+            for (var _i = 1; _i < arguments.length; _i++) {
+                componentDataType[_i - 1] = arguments[_i];
+            }
+            if (entity == null || entity == undefined || entity >= this._entitiIDTop) {
+                Logger.error("\u627E\u4E0D\u5230\u5B9E\u4F53 id:" + entity, "EntitisManager.addComponent");
+                return;
+            }
+            for (var i = 0; i < componentDataType.length; i++) {
+                if (componentDataType[i].typeID == undefined) {
+                    componentDataType[i].typeID = EntitisManager._componentTypeIdTop;
+                    this._components[EntitisManager._componentTypeIdTop] = new Array();
+                    EntitisManager._componentTypeIdTop++;
+                }
+                var typeID = componentDataType[i].typeID;
+                var component_entities = this._components[typeID];
+                var j = void 0;
+                for (j = component_entities.length - 1; j >= 0; j--) {
+                    if (component_entities[j] < entity) {
+                        component_entities[j + 1] = entity;
+                        break;
+                    }
+                    else {
+                        component_entities[j + 1] = component_entities[j];
+                    }
+                }
+                if (j == -1) {
+                    component_entities[0] = entity;
+                }
+                var component = new componentDataType[i]();
+                this._entitisComponents[entity][componentDataType[i].typeID] = component;
+            }
+        };
+        /**
+         * 添加公有组件
+         * @param sharedComponentType 组件
+         */
+        EntitisManager.prototype.addSharedComponent = function () {
+            var sharedComponentType = [];
+            for (var _i = 0; _i < arguments.length; _i++) {
+                sharedComponentType[_i] = arguments[_i];
+            }
+            for (var i = 0; i < sharedComponentType.length; i++) {
+                if (sharedComponentType[i].instance == undefined) {
+                    sharedComponentType[i].instance = new sharedComponentType[i]();
+                }
+            }
+        };
+        /**
+         * 创建一个实体
+         */
+        EntitisManager.prototype.CreateAEntity = function () {
+            this._entitisComponents[this._entitiIDTop] = new Array();
+            this._entities[this._entities.length] = this._entitiIDTop;
+            return this._entitiIDTop++;
+        };
+        /**
+         * 删除实体上的某些类型的组件
+         * @param entity 实体
+         * @param componentDataType 组件
+         */
+        EntitisManager.prototype.removeComponent = function (entity) {
+            var componentDataType = [];
+            for (var _i = 1; _i < arguments.length; _i++) {
+                componentDataType[_i - 1] = arguments[_i];
+            }
+            for (var i = 0; i < componentDataType.length; i++) {
+                this._entitisComponents[entity][componentDataType[i].typeID] = undefined;
+            }
+        };
+        /**
+         * 删除共享组件
+         * @param componentDataType 组件
+         */
+        EntitisManager.prototype.removeSharedComponent = function () {
+            var sharedComponentType = [];
+            for (var _i = 0; _i < arguments.length; _i++) {
+                sharedComponentType[_i] = arguments[_i];
+            }
+            for (var i = 0; i < sharedComponentType.length; i++) {
+                componentDataType[i].instance = undefined;
+            }
+        };
+        /**
+         * 删除一个实体
+         */
+        EntitisManager.prototype.RemoveAEntity = function (entity) {
+            for (var i = 0; i < this._components.length; i++) {
+                var temp = this._components[i];
+                var index_1 = temp.indexOf(entity);
+                if (index_1 >= 0) {
+                    temp.splice(index_1, 1);
+                }
+            }
+            var index = this._entities.indexOf(entity);
+            if (index >= 0) {
+                this._entities.splice(index, 1);
+            }
+            this._entitisComponents[entity] = undefined;
+        };
+        /**
+         * 获取满足条件的实体,时间复杂度O(n*m)，n是组件个数，m是组件类型数
+         * TODO:需要实现一个用于按某种排序规则进行插入排序或堆排序后取出实体的方法，某些情况下可以增加效率。
+         *      比如对Graphic组件中的layer排序。
+         * @param componentDataType
+         */
+        EntitisManager.prototype.GetEntities = function () {
+            var componentDataType = [];
+            for (var _i = 0; _i < arguments.length; _i++) {
+                componentDataType[_i] = arguments[_i];
+            }
+            if (componentDataType == null || componentDataType == undefined || componentDataType.length == 0) {
+                return this._entities;
+            }
+            var ret = new Array();
+            var i = new Array();
+            var max = 0;
+            for (var loop = 0; loop < componentDataType.length; loop++) {
+                if (this._components[componentDataType[loop].typeID] == undefined || this._components[componentDataType[loop].typeID] == null)
+                    return null;
+                i[loop] = 0;
+                max = Math.max(max, this._components[componentDataType[loop].typeID][0]);
+            }
+            while (true) {
+                for (var loop = 0; loop < componentDataType.length; loop++) {
+                    while (this._components[componentDataType[loop].typeID][i[loop]] < max) {
+                        i[loop]++;
+                        if (i[loop] >= this._components[componentDataType[loop].typeID].length) {
+                            return ret;
+                        }
+                        max = Math.max(max, this._components[componentDataType[loop].typeID][i[loop]]);
+                    }
+                }
+                var f = true;
+                for (var loop = 0; loop < componentDataType.length; loop++) {
+                    if (this._components[componentDataType[loop].typeID][i[loop]] < max) {
+                        f = false;
+                        break;
+                    }
+                }
+                if (f == true) {
+                    ret.push(max);
+                    max += 1;
+                }
+            }
+            return ret;
+        };
+        /**
+         * 通过实体和组件类型来获取组件
+         * @param entity 实体
+         * @param type 组件类型
+         */
+        EntitisManager.prototype.GetComponent = function (entity, type) {
+            if (this._entitisComponents[entity] == null || this._entitisComponents[entity] == undefined) {
+                Logger.error("\u627E\u4E0D\u5230\u5B9E\u4F53 id:" + entity, "EntitisManager.addComponent");
+                return;
+            }
+            return this._entitisComponents[entity][type.typeID];
+        };
+        /**
+         * 给下一个新组件类型分配的ID
+         */
+        EntitisManager._componentTypeIdTop = 0;
+        return EntitisManager;
+    }());
+    ECS.EntitisManager = EntitisManager;
+})(ECS || (ECS = {}));
+if (!window.ECS)
+    window.ECS = {};
+window.ECS.EntitisManager = ECS.EntitisManager;
 var ECS;
 (function (ECS) {
     var World = /** @class */ (function () {
@@ -175,7 +419,17 @@ var ECS;
          * @param name 命名
          */
         function World(name) {
+            /**
+             * update执行的时间间隔
+             */
+            this._deltaTime = 0.1;
+            /**
+             * 上次更新的时间
+             */
+            this._lastUpdateTime = 0;
             this._name = name;
+            this._entitisManager = new ECS.EntitisManager();
+            this._systems = new Array();
         }
         Object.defineProperty(World, "active", {
             get: function () {
@@ -184,6 +438,41 @@ var ECS;
             enumerable: true,
             configurable: true
         });
+        /**
+         * 创建一个世界
+         * @param name 名字
+         */
+        World.CreateAWorld = function (name) {
+            this.RemoveWorld(name);
+            this._worlds[name] = new World(name);
+            if (this._active == null) {
+                this._active = this._worlds[name];
+            }
+            return this._worlds[name];
+        };
+        /**
+         * 销毁一个world
+         * @param name 名字
+         */
+        World.RemoveWorld = function (name) {
+            if (this._worlds[name] == undefined) {
+                return;
+            }
+            if (this._worlds[name] == this._active) {
+                this._active = null;
+            }
+            this._worlds[name].destroy();
+            this._worlds[name] = undefined;
+        };
+        /**
+         * 激活一个world
+         * 只有被激活的世界中的system的OnUpdate会被执行
+         * 同时只会有一个被激活的世界
+         * @param name 名字
+         */
+        World.SetActive = function (name) {
+            this._active = this._worlds[name];
+        };
         Object.defineProperty(World.prototype, "name", {
             get: function () {
                 return this._name;
@@ -191,10 +480,74 @@ var ECS;
             enumerable: true,
             configurable: true
         });
+        Object.defineProperty(World.prototype, "EntitisManager", {
+            /**
+             * 获取实体管理对象
+             */
+            get: function () {
+                return this._entitisManager;
+            },
+            enumerable: true,
+            configurable: true
+        });
+        /**
+         * 析构函数
+         */
+        World.prototype.destroy = function () {
+            while (this._systems.length > 0) {
+                this._systems.pop().OnDestroy();
+            }
+        };
+        /**
+         * 帧执行函数
+         */
+        World.prototype.update = function () {
+            var _a;
+            if (TimeManager.Instance.realTimeSinceStartScene - this._lastUpdateTime < this._deltaTime) {
+                return;
+            }
+            this._lastUpdateTime = TimeManager.Instance.realTimeSinceStartScene;
+            for (var i = 0; i < this._systems.length; i++) {
+                var ctypes = (this._systems[i]['ctypes']);
+                if (ctypes != null && ctypes != undefined) {
+                    var cnames = (this._systems[i]['cnames']);
+                    var entities = (_a = this._entitisManager).GetEntities.apply(_a, ctypes);
+                    this._systems[i].entities = entities;
+                    for (var j = 0; j < ctypes.length; j++) {
+                        var newArr = new Array();
+                        this._systems[i][cnames[j]] = newArr;
+                        if (entities != null) {
+                            for (var k = 0; k < entities.length; k++) {
+                                newArr.push(this._entitisManager.GetComponent(entities[k], ctypes[j]));
+                            }
+                        }
+                    }
+                }
+                this._systems[i].Update();
+            }
+        };
+        /**
+         * 添加系统
+         * @param system 系统实例
+         */
+        World.prototype.addSystem = function (system) {
+            var obj = new system();
+            obj.OnStart();
+            this._systems.push(obj);
+        };
+        /**
+         * world表
+         */
+        World._worlds = new Array();
         return World;
     }());
     ECS.World = World;
+    Object.seal(World.prototype.update);
+    Object.seal(World.prototype.addSystem);
 })(ECS || (ECS = {}));
+if (!window.ECS)
+    window.ECS = {};
+window.ECS.World = ECS.World;
 // Learn TypeScript:
 //  - [Chinese] http://docs.cocos.com/creator/manual/zh/scripting/typescript.html
 //  - [English] http://www.cocos2d-x.org/docs/creator/manual/en/scripting/typescript.html
@@ -845,7 +1198,7 @@ var RpcClient = /** @class */ (function () {
         reader.readAsText(event.data, 'utf-8');
         reader.onload = function (ev) {
             var _a;
-            //Logger.info(reader.result);
+            // Logger.info(reader.result);
             var ret = JSON.parse(reader.result);
             if (ret["$type"].indexOf("SimCivil.Rpc.RpcResponse") != -1) {
                 var obj = JSON.parse(reader.result);
@@ -1414,6 +1767,132 @@ var SimCivil;
         Contract.ValueTuple = ValueTuple;
     })(Contract = SimCivil.Contract || (SimCivil.Contract = {}));
 })(SimCivil || (SimCivil = {}));
+var Tools;
+(function (Tools) {
+    /**
+     * 二叉堆
+     */
+    var BinaryHeap = /** @class */ (function () {
+        /**
+         * 构造函数
+         * @param compare 排序函数返回true表示a应该排在b上面，否则b在a上面
+         */
+        function BinaryHeap(compare) {
+            this._count = 0;
+            this._compare = compare;
+            this._arr = new Array();
+        }
+        /**
+         * 从末尾向上整理数据
+         * @param startPos 起始点
+         */
+        BinaryHeap.prototype.upTree = function () {
+            var startPos = this._count - 1;
+            var f = 0;
+            var t = null;
+            while (startPos > 0) {
+                f = (startPos - 1) >> 1;
+                if (this._compare(this._arr[startPos], this._arr[f])) {
+                    t = this._arr[f];
+                    this._arr[f] = this._arr[startPos];
+                    this._arr[startPos] = t;
+                    startPos = f;
+                }
+                else {
+                    break;
+                }
+            }
+        };
+        /**
+         * 从起始点向下整理数据
+         * @param startPos 起始点
+         */
+        BinaryHeap.prototype.downTree = function (startPos) {
+            var lch = 0;
+            var rch = 0;
+            var minch = 0;
+            var t = null;
+            while (startPos < this._count) {
+                lch = startPos * 2 + 1;
+                if (lch >= this._count) {
+                    return;
+                }
+                rch = startPos * 2 + 2;
+                minch = (rch >= this._count || this._compare(this._arr[lch], this._arr[rch])) ? lch : rch;
+                if (this._compare(this._arr[minch], this._arr[startPos])) {
+                    t = this._arr[minch];
+                    this._arr[minch] = this._arr[startPos];
+                    this._arr[startPos] = t;
+                    startPos = minch;
+                }
+                else {
+                    break;
+                }
+            }
+        };
+        /**
+         * 删除一个任意位置的数据(时间复杂度O(n)+O(log(n)))
+         * @param t 数据
+         */
+        BinaryHeap.prototype.Remove = function (t) {
+            for (var i = 0; i < this._count; i++) {
+                if (this._arr[i] === t) {
+                    this._arr[i] = this._arr[this._count - 1];
+                    this._count--;
+                    this.downTree(i);
+                    return;
+                }
+            }
+        };
+        /**
+         * 添加一个数据(时间复杂度O(log(n)))
+         * @param t 数据
+         */
+        BinaryHeap.prototype.Push = function (t) {
+            this._arr[this._count] = t;
+            this._count++;
+            this.upTree();
+        };
+        /**
+         * 取出顶端数据并将其删除(时间复杂度O(log(n)))
+         */
+        BinaryHeap.prototype.Pop = function () {
+            if (this._count == 0) {
+                return null;
+            }
+            var ret = this._arr[0];
+            this._count--;
+            this._arr[0] = this._arr[this._count];
+            this.downTree(0);
+            return ret;
+        };
+        /**
+         * 取出堆排序后的数组(时间复杂度O(n*log(n) + O(n)));
+         */
+        BinaryHeap.prototype.GetSortArray = function () {
+            var ret = new Array();
+            var c = 0;
+            while (this._count > 0) {
+                ret[c] = this._arr[0];
+                this._count--;
+                this._arr[0] = this._arr[this._count];
+                this.downTree(0);
+                this._arr[this._count] = ret[c];
+                c++;
+            }
+            this._count = c;
+            c = c >> 1;
+            for (var i = 0; i < c; i++) {
+                var t = this._arr[i];
+                this._arr[i] = this._arr[this._count - i - 1];
+                this._arr[this._count - i - 1] = t;
+            }
+            return ret;
+        };
+        return BinaryHeap;
+    }());
+    Tools.BinaryHeap = BinaryHeap;
+})(Tools || (Tools = {}));
 var Tools;
 (function (Tools) {
     var LocalStorageBase = /** @class */ (function () {

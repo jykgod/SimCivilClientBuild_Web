@@ -37,6 +37,35 @@ window.__require = function e(t, n, r) {
     })(ComponentUINameEnum = exports.ComponentUINameEnum || (exports.ComponentUINameEnum = {}));
     cc._RF.pop();
   }, {} ],
+  DirectionComponent: [ function(require, module, exports) {
+    "use strict";
+    cc._RF.push(module, "f778co7FtJBeqazeMWh3kpa", "DirectionComponent");
+    Object.defineProperty(exports, "__esModule", {
+      value: true
+    });
+    var DirectionComponent = function() {
+      function DirectionComponent() {
+        this.direction = cc.Vec2.ZERO;
+      }
+      return DirectionComponent;
+    }();
+    exports.default = DirectionComponent;
+    cc._RF.pop();
+  }, {} ],
+  EcsUtility: [ function(require, module, exports) {
+    "use strict";
+    cc._RF.push(module, "636d21fNKdHlq7iso7mbvFV", "EcsUtility");
+    Object.defineProperty(exports, "__esModule", {
+      value: true
+    });
+    var EcsUtility = function() {
+      function EcsUtility() {}
+      EcsUtility.GotRole = false;
+      return EcsUtility;
+    }();
+    exports.EcsUtility = EcsUtility;
+    cc._RF.pop();
+  }, {} ],
   EditableComponentContainerConfigure: [ function(require, module, exports) {
     "use strict";
     cc._RF.push(module, "b6c12wK4RdBho+MBlw+ti3X", "EditableComponentContainerConfigure");
@@ -468,6 +497,7 @@ window.__require = function e(t, n, r) {
     var GameManager_1 = require("../manager/GameManager");
     var UIManager_1 = require("../manager/UIManager");
     var LocalizationManager_1 = require("../manager/LocalizationManager");
+    var ResourcesManager_1 = require("../manager/ResourcesManager");
     var _a = cc._decorator, ccclass = _a.ccclass, property = _a.property;
     var GameLauncher = function(_super) {
       __extends(GameLauncher, _super);
@@ -485,6 +515,7 @@ window.__require = function e(t, n, r) {
       GameLauncher.prototype.onLoad = function() {
         GameLauncher_1.instance = this;
         cc.game.addPersistRootNode(this.node);
+        ResourcesManager_1.ResourcesManager.Instance.Init();
         TimeManager.Instance.Init();
         LocalizationManager_1.LocalizationManager.Instance.Init("cn");
         UIManager_1.UIManager.Instance.Init();
@@ -493,6 +524,7 @@ window.__require = function e(t, n, r) {
       GameLauncher.prototype.update = function(dt) {
         TimeManager.Instance.Update(dt);
         GameManager_1.GameManager.Instance.Update(dt);
+        null != ECS.World.active && void 0 != ECS.World.active && ECS.World.active.update();
       };
       GameLauncher.prototype.onDestroy = function() {};
       GameLauncher.prototype.setScreenFit = function() {};
@@ -506,6 +538,7 @@ window.__require = function e(t, n, r) {
   }, {
     "../manager/GameManager": "GameManager",
     "../manager/LocalizationManager": "LocalizationManager",
+    "../manager/ResourcesManager": "ResourcesManager",
     "../manager/UIManager": "UIManager"
   } ],
   GameManager: [ function(require, module, exports) {
@@ -578,7 +611,12 @@ window.__require = function e(t, n, r) {
     var StateEnum_1 = require("../../enum/StateEnum");
     var UIManager_1 = require("../../manager/UIManager");
     var UINameEnum_1 = require("../../enum/UINameEnum");
-    var GloableConstantUtils_1 = require("../../tools/GloableConstantUtils");
+    var InputSystem_1 = require("../../ecs/system/InputSystem");
+    var MapSystem_1 = require("../../ecs/system/MapSystem");
+    var ViewSyncSystem_1 = require("../../ecs/system/ViewSyncSystem");
+    var MotionControllerSystem_1 = require("../../ecs/system/MotionControllerSystem");
+    var PlayerMotionSyncSystem_1 = require("../../ecs/system/PlayerMotionSyncSystem");
+    var RoleSystem_1 = require("../../ecs/system/RoleSystem");
     var GameStateMainNormal = function() {
       function GameStateMainNormal() {
         this.stateType = StateEnum_1.GameStateEnum.GAME_STATE_MAIN_NORMAL;
@@ -587,24 +625,34 @@ window.__require = function e(t, n, r) {
         var args = [];
         for (var _i = 0; _i < arguments.length; _i++) args[_i] = arguments[_i];
         UIManager_1.UIManager.Instance.ShowUI(UINameEnum_1.UINameEnum.MAIN_UI);
-        cc.loader.loadRes(GloableConstantUtils_1.GloableConstantUtils.TestPrefabPath.concat("TestPlayer"), function(error, res) {
-          var node = cc.instantiate(res);
-          node.setParent(cc.Canvas.instance.node);
-          Logger.log("nihaoa", "GameStateMainNormal");
-        });
+        this.world = ECS.World.CreateAWorld("simsivil");
+        this.world.addSystem(RoleSystem_1.default);
+        this.world.addSystem(InputSystem_1.default);
+        this.world.addSystem(MapSystem_1.default);
+        this.world.addSystem(ViewSyncSystem_1.default);
+        this.world.addSystem(MotionControllerSystem_1.default);
+        this.world.addSystem(PlayerMotionSyncSystem_1.default);
       };
+      GameStateMainNormal.prototype.StateUpdate = function(currentStateTime) {};
       GameStateMainNormal.prototype.StateEnd = function(currentStateTIme) {
         UIManager_1.UIManager.Instance.HideUI(UINameEnum_1.UINameEnum.MAIN_UI);
+        ECS.World.RemoveWorld("simsivil");
+        this.world = null;
       };
       return GameStateMainNormal;
     }();
     exports.GameStateMainNormal = GameStateMainNormal;
     cc._RF.pop();
   }, {
+    "../../ecs/system/InputSystem": "InputSystem",
+    "../../ecs/system/MapSystem": "MapSystem",
+    "../../ecs/system/MotionControllerSystem": "MotionControllerSystem",
+    "../../ecs/system/PlayerMotionSyncSystem": "PlayerMotionSyncSystem",
+    "../../ecs/system/RoleSystem": "RoleSystem",
+    "../../ecs/system/ViewSyncSystem": "ViewSyncSystem",
     "../../enum/StateEnum": "StateEnum",
     "../../enum/UINameEnum": "UINameEnum",
-    "../../manager/UIManager": "UIManager",
-    "../../tools/GloableConstantUtils": "GloableConstantUtils"
+    "../../manager/UIManager": "UIManager"
   } ],
   GameStateSceneLoading: [ function(require, module, exports) {
     "use strict";
@@ -659,6 +707,7 @@ window.__require = function e(t, n, r) {
       function GloableConstantUtils() {}
       GloableConstantUtils.UIPrefabPath = "prefab/ui/";
       GloableConstantUtils.TestPrefabPath = "prefab/test/";
+      GloableConstantUtils.GamePrefabPath = "prefab/game/";
       GloableConstantUtils.JsonPath = "json/";
       return GloableConstantUtils;
     }();
@@ -719,6 +768,13 @@ window.__require = function e(t, n, r) {
         }
         return ret;
       };
+      GloableUtils.Delay = function(time) {
+        return new Promise(function(resolve, reject) {
+          setTimeout(function() {
+            return resolve();
+          }, time);
+        });
+      };
       GloableUtils.tipsPendingQueue = null;
       return GloableUtils;
     }();
@@ -727,6 +783,136 @@ window.__require = function e(t, n, r) {
   }, {
     "../enum/UINameEnum": "UINameEnum",
     "../manager/UIManager": "UIManager"
+  } ],
+  GraphicComponent: [ function(require, module, exports) {
+    "use strict";
+    cc._RF.push(module, "98665umGAxLYLGtM9VSFcOT", "GraphicComponent");
+    Object.defineProperty(exports, "__esModule", {
+      value: true
+    });
+    var GraphicComponent = function() {
+      function GraphicComponent() {}
+      return GraphicComponent;
+    }();
+    exports.default = GraphicComponent;
+    cc._RF.pop();
+  }, {} ],
+  InputData: [ function(require, module, exports) {
+    "use strict";
+    cc._RF.push(module, "e2003rIYB9FkI6d5OKdWKjm", "InputData");
+    Object.defineProperty(exports, "__esModule", {
+      value: true
+    });
+    var InputData = function() {
+      function InputData() {}
+      return InputData;
+    }();
+    exports.default = InputData;
+    cc._RF.pop();
+  }, {} ],
+  InputSystem: [ function(require, module, exports) {
+    "use strict";
+    cc._RF.push(module, "5c52fc6VXJIoKuiK/MtVC8y", "InputSystem");
+    Object.defineProperty(exports, "__esModule", {
+      value: true
+    });
+    var InputData_1 = require("../sharedComponent/InputData");
+    var GameLauncher_1 = require("../../logic/GameLauncher");
+    var InputSystem = function(_super) {
+      __extends(InputSystem, _super);
+      function InputSystem() {
+        return null !== _super && _super.apply(this, arguments) || this;
+      }
+      InputSystem.prototype.OnStart = function() {
+        ECS.World.active.EntitisManager.addSharedComponent(InputData_1.default);
+        cc.systemEvent.on(cc.SystemEvent.EventType.KEY_DOWN, this.onKeyDown, this);
+        cc.systemEvent.on(cc.SystemEvent.EventType.KEY_UP, this.onKeyUp, this);
+        GameLauncher_1.default.Instance.node.on(cc.Node.EventType.MOUSE_DOWN, this.onMouseDown, this);
+        GameLauncher_1.default.Instance.node.on(cc.Node.EventType.MOUSE_UP, this.onMouseUp, this);
+        GameLauncher_1.default.Instance.node.on(cc.Node.EventType.MOUSE_MOVE, this.onMouseMove, this);
+      };
+      InputSystem.prototype.OnDestroy = function() {
+        ECS.World.active.EntitisManager.removeSharedComponent(InputData_1.default);
+        cc.systemEvent.off(cc.SystemEvent.EventType.KEY_DOWN, this.onKeyDown, this);
+        cc.systemEvent.off(cc.SystemEvent.EventType.KEY_UP, this.onKeyUp, this);
+        GameLauncher_1.default.Instance.node.off(cc.Node.EventType.MOUSE_DOWN, this.onMouseDown, this);
+        GameLauncher_1.default.Instance.node.off(cc.Node.EventType.MOUSE_UP, this.onMouseUp, this);
+        GameLauncher_1.default.Instance.node.off(cc.Node.EventType.MOUSE_MOVE, this.onMouseMove, this);
+      };
+      InputSystem.prototype.OnUpdate = function() {};
+      InputSystem.prototype.onMouseDown = function(event) {
+        switch (event.getButton()) {
+         case cc.Event.EventMouse.BUTTON_LEFT:
+          InputData_1.default.instance.mouse_left = true;
+          break;
+
+         case cc.Event.EventMouse.BUTTON_RIGHT:
+          InputData_1.default.instance.mouse_right = true;
+        }
+        InputData_1.default.instance.mousePosition = event.getLocation();
+        InputData_1.default.instance.time = TimeManager.Instance.realTimeSinceStartScene;
+      };
+      InputSystem.prototype.onMouseUp = function(event) {
+        switch (event.getButton()) {
+         case cc.Event.EventMouse.BUTTON_LEFT:
+          InputData_1.default.instance.mouse_left = false;
+          break;
+
+         case cc.Event.EventMouse.BUTTON_RIGHT:
+          InputData_1.default.instance.mouse_right = false;
+        }
+        InputData_1.default.instance.mousePosition = event.getLocation();
+        InputData_1.default.instance.time = TimeManager.Instance.realTimeSinceStartScene;
+      };
+      InputSystem.prototype.onMouseMove = function(event) {
+        InputData_1.default.instance.mousePosition = event.getLocation();
+        InputData_1.default.instance.time = TimeManager.Instance.realTimeSinceStartScene;
+      };
+      InputSystem.prototype.onKeyDown = function(event) {
+        switch (event.keyCode) {
+         case cc.macro.KEY.w:
+          InputData_1.default.instance.up = true;
+          break;
+
+         case cc.macro.KEY.a:
+          InputData_1.default.instance.left = true;
+          break;
+
+         case cc.macro.KEY.s:
+          InputData_1.default.instance.down = true;
+          break;
+
+         case cc.macro.KEY.d:
+          InputData_1.default.instance.right = true;
+        }
+        InputData_1.default.instance.time = TimeManager.Instance.realTimeSinceStartScene;
+      };
+      InputSystem.prototype.onKeyUp = function(event) {
+        switch (event.keyCode) {
+         case cc.macro.KEY.w:
+          InputData_1.default.instance.up = false;
+          break;
+
+         case cc.macro.KEY.a:
+          InputData_1.default.instance.left = false;
+          break;
+
+         case cc.macro.KEY.s:
+          InputData_1.default.instance.down = false;
+          break;
+
+         case cc.macro.KEY.d:
+          InputData_1.default.instance.right = false;
+        }
+        InputData_1.default.instance.time = TimeManager.Instance.realTimeSinceStartScene;
+      };
+      return InputSystem;
+    }(ECS.ComponentSystem);
+    exports.default = InputSystem;
+    cc._RF.pop();
+  }, {
+    "../../logic/GameLauncher": "GameLauncher",
+    "../sharedComponent/InputData": "InputData"
   } ],
   JsonConfigNameEnum: [ function(require, module, exports) {
     "use strict";
@@ -1074,6 +1260,161 @@ window.__require = function e(t, n, r) {
     "../../manager/UIManager": "UIManager",
     "../UIBase": "UIBase"
   } ],
+  MapCeilTypEnum: [ function(require, module, exports) {
+    "use strict";
+    cc._RF.push(module, "42ba58ILZVDnqCD/cZ8toK4", "MapCeilTypEnum");
+    Object.defineProperty(exports, "__esModule", {
+      value: true
+    });
+    var MapCeilTypeEnum;
+    (function(MapCeilTypeEnum) {
+      MapCeilTypeEnum[MapCeilTypeEnum["grass"] = 0] = "grass";
+    })(MapCeilTypeEnum = exports.MapCeilTypeEnum || (exports.MapCeilTypeEnum = {}));
+    cc._RF.pop();
+  }, {} ],
+  MapCeil: [ function(require, module, exports) {
+    "use strict";
+    cc._RF.push(module, "470adiMN3VFt7gPVm2ObY65", "MapCeil");
+    Object.defineProperty(exports, "__esModule", {
+      value: true
+    });
+    var MapCeil = function() {
+      function MapCeil(type, id) {
+        this._type = type;
+        this._id = id;
+      }
+      Object.defineProperty(MapCeil.prototype, "type", {
+        get: function() {
+          return this._type;
+        },
+        enumerable: true,
+        configurable: true
+      });
+      Object.defineProperty(MapCeil.prototype, "id", {
+        get: function() {
+          return this._id;
+        },
+        enumerable: true,
+        configurable: true
+      });
+      return MapCeil;
+    }();
+    exports.default = MapCeil;
+    cc._RF.pop();
+  }, {} ],
+  MapDataComponent: [ function(require, module, exports) {
+    "use strict";
+    cc._RF.push(module, "702a1HvRDFM6YZF1shcV/Jd", "MapDataComponent");
+    Object.defineProperty(exports, "__esModule", {
+      value: true
+    });
+    var MapDataComponent = function() {
+      function MapDataComponent() {}
+      return MapDataComponent;
+    }();
+    exports.default = MapDataComponent;
+    cc._RF.pop();
+  }, {} ],
+  MapSystem: [ function(require, module, exports) {
+    "use strict";
+    cc._RF.push(module, "8bbffFETblAdIjUgquZHlvb", "MapSystem");
+    Object.defineProperty(exports, "__esModule", {
+      value: true
+    });
+    var MapDataComponent_1 = require("../sharedComponent/MapDataComponent");
+    var MapSystem = function(_super) {
+      __extends(MapSystem, _super);
+      function MapSystem() {
+        return null !== _super && _super.apply(this, arguments) || this;
+      }
+      MapSystem.prototype.OnStart = function() {
+        ECS.World.active.EntitisManager.addSharedComponent(MapDataComponent_1.default);
+      };
+      MapSystem.prototype.OnDestroy = function() {
+        ECS.World.active.EntitisManager.removeSharedComponent(MapDataComponent_1.default);
+      };
+      MapSystem.prototype.OnUpdate = function() {};
+      return MapSystem;
+    }(ECS.ComponentSystem);
+    exports.default = MapSystem;
+    cc._RF.pop();
+  }, {
+    "../sharedComponent/MapDataComponent": "MapDataComponent"
+  } ],
+  MotionComponent: [ function(require, module, exports) {
+    "use strict";
+    cc._RF.push(module, "5bf6dBXUwJODael5B4XLnHS", "MotionComponent");
+    Object.defineProperty(exports, "__esModule", {
+      value: true
+    });
+    var MotionComponent = function() {
+      function MotionComponent() {
+        this.speed = 0;
+        this.v = cc.Vec2.ZERO;
+        this.canMove = true;
+      }
+      return MotionComponent;
+    }();
+    exports.default = MotionComponent;
+    cc._RF.pop();
+  }, {} ],
+  MotionControllerComponent: [ function(require, module, exports) {
+    "use strict";
+    cc._RF.push(module, "2399ficJ/ND6rAbOPK8mAYG", "MotionControllerComponent");
+    Object.defineProperty(exports, "__esModule", {
+      value: true
+    });
+    var MotionControllerComponent = function() {
+      function MotionControllerComponent() {
+        this.type = 0;
+      }
+      return MotionControllerComponent;
+    }();
+    exports.default = MotionControllerComponent;
+    cc._RF.pop();
+  }, {} ],
+  MotionControllerSystem: [ function(require, module, exports) {
+    "use strict";
+    cc._RF.push(module, "cf442wmMO9PZLculpsZ+qy/", "MotionControllerSystem");
+    Object.defineProperty(exports, "__esModule", {
+      value: true
+    });
+    var MotionComponent_1 = require("../component/MotionComponent");
+    var DirectionComponent_1 = require("../component/DirectionComponent");
+    var InputData_1 = require("../sharedComponent/InputData");
+    var MotionControllerComponent_1 = require("../component/MotionControllerComponent");
+    var MotionControllerSystem = function(_super) {
+      __extends(MotionControllerSystem, _super);
+      function MotionControllerSystem() {
+        return null !== _super && _super.apply(this, arguments) || this;
+      }
+      MotionControllerSystem.prototype.OnUpdate = function() {
+        if (null == this.entities) return;
+        var inputData = InputData_1.default.instance;
+        for (var i = 0; i < this.entities.length; i++) if (true == this.motions[i].canMove) {
+          this.motionController[i].type;
+          this.directions[i].direction = cc.Vec2.ZERO;
+          inputData.right && (this.directions[i].direction.x += 1);
+          inputData.left && (this.directions[i].direction.x -= 1);
+          inputData.up && (this.directions[i].direction.y += 1);
+          inputData.down && (this.directions[i].direction.y -= 1);
+          this.directions[i].direction.normalizeSelf();
+          this.motions[i].v = this.directions[i].direction.mul(this.motions[i].speed);
+        }
+      };
+      __decorate([ ECS.inject(DirectionComponent_1.default) ], MotionControllerSystem.prototype, "directions", void 0);
+      __decorate([ ECS.inject(MotionComponent_1.default) ], MotionControllerSystem.prototype, "motions", void 0);
+      __decorate([ ECS.inject(MotionControllerComponent_1.default) ], MotionControllerSystem.prototype, "motionController", void 0);
+      return MotionControllerSystem;
+    }(ECS.ComponentSystem);
+    exports.default = MotionControllerSystem;
+    cc._RF.pop();
+  }, {
+    "../component/DirectionComponent": "DirectionComponent",
+    "../component/MotionComponent": "MotionComponent",
+    "../component/MotionControllerComponent": "MotionControllerComponent",
+    "../sharedComponent/InputData": "InputData"
+  } ],
   MovementTest: [ function(require, module, exports) {
     "use strict";
     cc._RF.push(module, "27e3d7+AHdIboJqy5Na1SoR", "MovementTest");
@@ -1217,6 +1558,108 @@ window.__require = function e(t, n, r) {
     exports.default = MovementTest;
     cc._RF.pop();
   }, {} ],
+  Npc: [ function(require, module, exports) {
+    "use strict";
+    cc._RF.push(module, "877cfTRpQdD9LCJAMhiG5Tu", "Npc");
+    Object.defineProperty(exports, "__esModule", {
+      value: true
+    });
+    var _a = cc._decorator, ccclass = _a.ccclass, property = _a.property;
+    var Npc = function(_super) {
+      __extends(Npc, _super);
+      function Npc() {
+        return null !== _super && _super.apply(this, arguments) || this;
+      }
+      Object.defineProperty(Npc.prototype, "entity", {
+        get: function() {
+          return this._entity;
+        },
+        enumerable: true,
+        configurable: true
+      });
+      Npc = __decorate([ ccclass ], Npc);
+      return Npc;
+    }(cc.Component);
+    exports.default = Npc;
+    cc._RF.pop();
+  }, {} ],
+  PlayerMotionSyncSystem: [ function(require, module, exports) {
+    "use strict";
+    cc._RF.push(module, "20cfalIhZVA1Zlq+cA8Vt0z", "PlayerMotionSyncSystem");
+    Object.defineProperty(exports, "__esModule", {
+      value: true
+    });
+    var MotionComponent_1 = require("../component/MotionComponent");
+    var MotionControllerComponent_1 = require("../component/MotionControllerComponent");
+    var PositionComponent_1 = require("../component/PositionComponent");
+    var PlayerMotionSyncSystem = function(_super) {
+      __extends(PlayerMotionSyncSystem, _super);
+      function PlayerMotionSyncSystem() {
+        return null !== _super && _super.apply(this, arguments) || this;
+      }
+      PlayerMotionSyncSystem.prototype.OnStart = function() {
+        this.lastTime = TimeManager.Instance.realTimeSinceStartScene;
+      };
+      PlayerMotionSyncSystem.prototype.OnUpdate = function() {
+        if (this.motion.length > 0) {
+          this.pos[0].position = this.pos[0].position.add(this.motion[0].v.mul(TimeManager.Instance.realTimeSinceStartScene - this.lastTime));
+          SimCivil.Contract.IPlayerController.MoveTo(new SimCivil.Contract.ValueTuple({
+            Item1: this.pos[0].position.x,
+            Item2: this.pos[0].position.y
+          }), new Date());
+        }
+        this.lastTime = TimeManager.Instance.realTimeSinceStartScene;
+      };
+      __decorate([ ECS.inject(PositionComponent_1.default) ], PlayerMotionSyncSystem.prototype, "pos", void 0);
+      __decorate([ ECS.inject(MotionComponent_1.default) ], PlayerMotionSyncSystem.prototype, "motion", void 0);
+      __decorate([ ECS.inject(MotionControllerComponent_1.default) ], PlayerMotionSyncSystem.prototype, "controller", void 0);
+      return PlayerMotionSyncSystem;
+    }(ECS.ComponentSystem);
+    exports.default = PlayerMotionSyncSystem;
+    cc._RF.pop();
+  }, {
+    "../component/MotionComponent": "MotionComponent",
+    "../component/MotionControllerComponent": "MotionControllerComponent",
+    "../component/PositionComponent": "PositionComponent"
+  } ],
+  Player: [ function(require, module, exports) {
+    "use strict";
+    cc._RF.push(module, "d44576A8VpP97b9YORzMgN7", "Player");
+    Object.defineProperty(exports, "__esModule", {
+      value: true
+    });
+    var MotionComponent_1 = require("../../ecs/component/MotionComponent");
+    var PositionComponent_1 = require("../../ecs/component/PositionComponent");
+    var MotionControllerComponent_1 = require("../../ecs/component/MotionControllerComponent");
+    var DirectionComponent_1 = require("../../ecs/component/DirectionComponent");
+    var Npc_1 = require("./Npc");
+    var _a = cc._decorator, ccclass = _a.ccclass, property = _a.property;
+    var Player = function(_super) {
+      __extends(Player, _super);
+      function Player() {
+        return null !== _super && _super.apply(this, arguments) || this;
+      }
+      Player.prototype.start = function() {
+        this._entity = ECS.World.active.EntitisManager.CreateAEntity();
+        ECS.World.active.EntitisManager.addComponent(this._entity, MotionComponent_1.default, PositionComponent_1.default, MotionControllerComponent_1.default, DirectionComponent_1.default);
+        Logger.log("add player");
+        this.posComp = ECS.World.active.EntitisManager.GetComponent(this._entity, PositionComponent_1.default);
+      };
+      Player.prototype.update = function() {
+        this.node.position = this.posComp.position.mul(10);
+      };
+      Player = __decorate([ ccclass ], Player);
+      return Player;
+    }(Npc_1.default);
+    exports.default = Player;
+    cc._RF.pop();
+  }, {
+    "../../ecs/component/DirectionComponent": "DirectionComponent",
+    "../../ecs/component/MotionComponent": "MotionComponent",
+    "../../ecs/component/MotionControllerComponent": "MotionControllerComponent",
+    "../../ecs/component/PositionComponent": "PositionComponent",
+    "./Npc": "Npc"
+  } ],
   PopupWarningUI: [ function(require, module, exports) {
     "use strict";
     cc._RF.push(module, "1d5923CL8ZOPIyPH1il1aeS", "PopupWarningUI");
@@ -1255,6 +1698,103 @@ window.__require = function e(t, n, r) {
     "../tools/GloableUtils": "GloableUtils",
     "./UIBase": "UIBase"
   } ],
+  PositionComponent: [ function(require, module, exports) {
+    "use strict";
+    cc._RF.push(module, "b75ecH6AD5P27gQ7Re/Kq5B", "PositionComponent");
+    Object.defineProperty(exports, "__esModule", {
+      value: true
+    });
+    var PositionComponent = function() {
+      function PositionComponent() {
+        this.position = cc.Vec2.ZERO;
+      }
+      return PositionComponent;
+    }();
+    exports.default = PositionComponent;
+    cc._RF.pop();
+  }, {} ],
+  ResourcesManager: [ function(require, module, exports) {
+    "use strict";
+    cc._RF.push(module, "381adfWfv1FV7Exm6dQCyL7", "ResourcesManager");
+    Object.defineProperty(exports, "__esModule", {
+      value: true
+    });
+    var ResourcesManager = function() {
+      function ResourcesManager() {}
+      ResourcesManager.prototype.Init = function() {};
+      ResourcesManager.prototype.loadRes = function(path, callback) {
+        cc.loader.loadRes(path, callback);
+      };
+      ResourcesManager.Instance = new ResourcesManager();
+      return ResourcesManager;
+    }();
+    exports.ResourcesManager = ResourcesManager;
+    cc._RF.pop();
+  }, {} ],
+  RoleSystem: [ function(require, module, exports) {
+    "use strict";
+    cc._RF.push(module, "3a299Ze1GNNjpEZABNEgmyf", "RoleSystem");
+    Object.defineProperty(exports, "__esModule", {
+      value: true
+    });
+    var GloableConstantUtils_1 = require("../../tools/GloableConstantUtils");
+    var ResourcesManager_1 = require("../../manager/ResourcesManager");
+    var EcsUtility_1 = require("../utility/EcsUtility");
+    var RoleSystem = function(_super) {
+      __extends(RoleSystem, _super);
+      function RoleSystem() {
+        return null !== _super && _super.apply(this, arguments) || this;
+      }
+      RoleSystem.prototype.OnStart = function() {
+        var _this = this;
+        var createRoleOption = new SimCivil.Contract.CreateRoleOption();
+        createRoleOption.Gender = SimCivil.Contract.Gender.male;
+        createRoleOption.Name = "jyk";
+        createRoleOption.Race = SimCivil.Contract.Race.human;
+        EcsUtility_1.EcsUtility.GotRole = false;
+        (function() {
+          return __awaiter(_this, void 0, void 0, function() {
+            var success, _a, _b, _c;
+            return __generator(this, function(_d) {
+              switch (_d.label) {
+               case 0:
+                return [ 4, SimCivil.Contract.IRoleManager.CreateRole(createRoleOption) ];
+
+               case 1:
+                success = _d.sent();
+                true == success ? Logger.log("CreateRole success\uff01", "MovementTest") : Logger.log("CreateRole faild", "MovementTest");
+                _a = EcsUtility_1.EcsUtility;
+                _c = (_b = SimCivil.Contract.IRoleManager).UseRole;
+                return [ 4, SimCivil.Contract.IRoleManager.GetRoleList() ];
+
+               case 2:
+                return [ 4, _c.apply(_b, [ _d.sent()[0].Id ]) ];
+
+               case 3:
+                _a.GotRole = _d.sent();
+                true == EcsUtility_1.EcsUtility.GotRole ? ResourcesManager_1.ResourcesManager.Instance.loadRes(GloableConstantUtils_1.GloableConstantUtils.GamePrefabPath.concat("Player"), function(error, res) {
+                  var node = cc.instantiate(res);
+                  node.setParent(cc.Canvas.instance.node);
+                }) : Logger.log("UseRole faild", "MovementTest");
+                return [ 2 ];
+              }
+            });
+          });
+        })();
+      };
+      RoleSystem.prototype.OnDestroy = function() {
+        EcsUtility_1.EcsUtility.GotRole = false;
+      };
+      RoleSystem.prototype.OnUpdate = function() {};
+      return RoleSystem;
+    }(ECS.ComponentSystem);
+    exports.default = RoleSystem;
+    cc._RF.pop();
+  }, {
+    "../../manager/ResourcesManager": "ResourcesManager",
+    "../../tools/GloableConstantUtils": "GloableConstantUtils",
+    "../utility/EcsUtility": "EcsUtility"
+  } ],
   SceneEnum: [ function(require, module, exports) {
     "use strict";
     cc._RF.push(module, "1af1a1KMtlBQa2+1bCV/U41", "SceneEnum");
@@ -1266,6 +1806,19 @@ window.__require = function e(t, n, r) {
       SceneEnum["MAIN"] = "main";
       SceneEnum["LAUNCHER"] = "launcher";
     })(SceneEnum = exports.SceneEnum || (exports.SceneEnum = {}));
+    cc._RF.pop();
+  }, {} ],
+  SizeComponent: [ function(require, module, exports) {
+    "use strict";
+    cc._RF.push(module, "fa573VRhLNGvKipxojDfY9p", "SizeComponent");
+    Object.defineProperty(exports, "__esModule", {
+      value: true
+    });
+    var SizeComponent = function() {
+      function SizeComponent() {}
+      return SizeComponent;
+    }();
+    exports.default = SizeComponent;
     cc._RF.pop();
   }, {} ],
   StateEnum: [ function(require, module, exports) {
@@ -1280,6 +1833,32 @@ window.__require = function e(t, n, r) {
       GameStateEnum[GameStateEnum["GAME_STATE_SCENE_LOADING"] = 1] = "GAME_STATE_SCENE_LOADING";
       GameStateEnum[GameStateEnum["GAME_STATE_MAIN_NORMAL"] = 2] = "GAME_STATE_MAIN_NORMAL";
     })(GameStateEnum = exports.GameStateEnum || (exports.GameStateEnum = {}));
+    cc._RF.pop();
+  }, {} ],
+  TestComponent2: [ function(require, module, exports) {
+    "use strict";
+    cc._RF.push(module, "590141a2TBEg70CSjc1E2yo", "TestComponent2");
+    Object.defineProperty(exports, "__esModule", {
+      value: true
+    });
+    var TestComponent2 = function() {
+      function TestComponent2() {}
+      return TestComponent2;
+    }();
+    exports.default = TestComponent2;
+    cc._RF.pop();
+  }, {} ],
+  TestComponent: [ function(require, module, exports) {
+    "use strict";
+    cc._RF.push(module, "7399cBpIRFIm6N7HcUAe0YN", "TestComponent");
+    Object.defineProperty(exports, "__esModule", {
+      value: true
+    });
+    var TestComponent = function() {
+      function TestComponent() {}
+      return TestComponent;
+    }();
+    exports.default = TestComponent;
     cc._RF.pop();
   }, {} ],
   TextLocalization: [ function(require, module, exports) {
@@ -1415,6 +1994,7 @@ window.__require = function e(t, n, r) {
       value: true
     });
     var GloableConstantUtils_1 = require("../tools/GloableConstantUtils");
+    var ResourcesManager_1 = require("./ResourcesManager");
     var UIManager = function() {
       function UIManager() {}
       Object.defineProperty(UIManager.prototype, "Canvas", {
@@ -1435,7 +2015,7 @@ window.__require = function e(t, n, r) {
         Logger.log("ShowUI " + uiName, "UIManager");
         if (void 0 == this.uiDictionary[uiName]) {
           this.uiDictionary[uiName] = null;
-          cc.loader.loadRes(GloableConstantUtils_1.GloableConstantUtils.UIPrefabPath.concat(uiName), function(error, res) {
+          ResourcesManager_1.ResourcesManager.Instance.loadRes(GloableConstantUtils_1.GloableConstantUtils.UIPrefabPath.concat(uiName), function(error, res) {
             if (null != error) {
               null != callBack && callBack(error, null);
               return;
@@ -1487,7 +2067,8 @@ window.__require = function e(t, n, r) {
     exports.UIManager = UIManager;
     cc._RF.pop();
   }, {
-    "../tools/GloableConstantUtils": "GloableConstantUtils"
+    "../tools/GloableConstantUtils": "GloableConstantUtils",
+    "./ResourcesManager": "ResourcesManager"
   } ],
   UINameEnum: [ function(require, module, exports) {
     "use strict";
@@ -1506,5 +2087,105 @@ window.__require = function e(t, n, r) {
       UINameEnum["DEFAULT"] = "null";
     })(UINameEnum = exports.UINameEnum || (exports.UINameEnum = {}));
     cc._RF.pop();
-  }, {} ]
-}, {}, [ "ComponentUINameEnum", "EventEnum", "JsonConfigNameEnum", "LocalStorageEnum", "SceneEnum", "StateEnum", "UINameEnum", "GameStateLogin", "GameStateMainNormal", "GameStateSceneLoading", "GameLauncher", "EditableComponentUIManager", "GameManager", "LocalizationManager", "UIManager", "MovementTest", "GloableConstantUtils", "GloableUtils", "JsonConfigUtils", "TextLocalization", "UIAnimationUtils", "PopupWarningUI", "UIBase", "EditableComponentContainer", "EditableComponentContainerConfigure", "EditableComponentUI", "EditableComponentUIConfigure", "LoadingUI", "LoginUI", "MainUI", "MainUIEquipComponent" ]);
+  }, {} ],
+  ViewChangeData: [ function(require, module, exports) {
+    "use strict";
+    cc._RF.push(module, "5e8f650DP9Amp5HyLr9+Aib", "ViewChangeData");
+    Object.defineProperty(exports, "__esModule", {
+      value: true
+    });
+    var ViewChangeData = function() {
+      function ViewChangeData() {}
+      return ViewChangeData;
+    }();
+    exports.default = ViewChangeData;
+    cc._RF.pop();
+  }, {} ],
+  ViewSyncSystem: [ function(require, module, exports) {
+    "use strict";
+    cc._RF.push(module, "c90276XGDNDMo2wUxG02arD", "ViewSyncSystem");
+    Object.defineProperty(exports, "__esModule", {
+      value: true
+    });
+    var EcsUtility_1 = require("../utility/EcsUtility");
+    var ViewChangeData_1 = require("../sharedComponent/ViewChangeData");
+    var GloableUtils_1 = require("../../tools/GloableUtils");
+    var PositionComponent_1 = require("../component/PositionComponent");
+    var MotionControllerComponent_1 = require("../component/MotionControllerComponent");
+    var MotionComponent_1 = require("../component/MotionComponent");
+    var ViewSyncSystem = function(_super) {
+      __extends(ViewSyncSystem, _super);
+      function ViewSyncSystem() {
+        return null !== _super && _super.apply(this, arguments) || this;
+      }
+      ViewSyncSystem.prototype.OnStart = function() {
+        var _this = this;
+        ECS.World.active.EntitisManager.addSharedComponent(ViewChangeData_1.default);
+        EcsUtility_1.EcsUtility.InitedViewSyncSystem = false;
+        EcsUtility_1.EcsUtility.RegisterViewSyncOpt = function() {
+          return __awaiter(_this, void 0, void 0, function() {
+            return __generator(this, function(_a) {
+              switch (_a.label) {
+               case 0:
+                if (!(false == EcsUtility_1.EcsUtility.GotRole)) return [ 3, 2 ];
+                return [ 4, GloableUtils_1.GloableUtils.Delay(500) ];
+
+               case 1:
+                _a.sent();
+                return [ 3, 0 ];
+
+               case 2:
+                return [ 4, SimCivil.Contract.IViewSynchronizer.RegisterViewSync(function(viewChanged) {
+                  ViewChangeData_1.default.instance.data = viewChanged;
+                }) ];
+
+               case 3:
+                _a.sent();
+                EcsUtility_1.EcsUtility.InitedViewSyncSystem = true;
+                return [ 2 ];
+              }
+            });
+          });
+        }();
+      };
+      ViewSyncSystem.prototype.OnDestroy = function() {
+        var _this = this;
+        ECS.World.active.EntitisManager.removeSharedComponent(ViewChangeData_1.default);
+        (function() {
+          return __awaiter(_this, void 0, void 0, function() {
+            return __generator(this, function(_a) {
+              switch (_a.label) {
+               case 0:
+                return [ 4, SimCivil.Contract.IViewSynchronizer.DeregisterViewSync() ];
+
+               case 1:
+                _a.sent();
+                return [ 2 ];
+              }
+            });
+          });
+        });
+        EcsUtility_1.EcsUtility.InitedViewSyncSystem = false;
+      };
+      ViewSyncSystem.prototype.OnUpdate = function() {
+        if (null != ViewChangeData_1.default.instance.data && null != this.positions && this.positions.length > 0) {
+          this.positions[0].position = new cc.Vec2(ViewChangeData_1.default.instance.data.Position.Item1, ViewChangeData_1.default.instance.data.Position.Item2);
+          this.motions[0].speed = ViewChangeData_1.default.instance.data.Speed;
+        }
+      };
+      __decorate([ ECS.inject(MotionComponent_1.default) ], ViewSyncSystem.prototype, "motions", void 0);
+      __decorate([ ECS.inject(PositionComponent_1.default) ], ViewSyncSystem.prototype, "positions", void 0);
+      __decorate([ ECS.inject(MotionControllerComponent_1.default) ], ViewSyncSystem.prototype, "motionController", void 0);
+      return ViewSyncSystem;
+    }(ECS.ComponentSystem);
+    exports.default = ViewSyncSystem;
+    cc._RF.pop();
+  }, {
+    "../../tools/GloableUtils": "GloableUtils",
+    "../component/MotionComponent": "MotionComponent",
+    "../component/MotionControllerComponent": "MotionControllerComponent",
+    "../component/PositionComponent": "PositionComponent",
+    "../sharedComponent/ViewChangeData": "ViewChangeData",
+    "../utility/EcsUtility": "EcsUtility"
+  } ]
+}, {}, [ "DirectionComponent", "GraphicComponent", "MotionComponent", "MotionControllerComponent", "PositionComponent", "SizeComponent", "TestComponent", "TestComponent2", "InputData", "MapDataComponent", "ViewChangeData", "InputSystem", "MapSystem", "MotionControllerSystem", "PlayerMotionSyncSystem", "RoleSystem", "ViewSyncSystem", "EcsUtility", "ComponentUINameEnum", "EventEnum", "JsonConfigNameEnum", "LocalStorageEnum", "MapCeilTypEnum", "SceneEnum", "StateEnum", "UINameEnum", "GameStateLogin", "GameStateMainNormal", "GameStateSceneLoading", "GameLauncher", "Npc", "Player", "EditableComponentUIManager", "GameManager", "LocalizationManager", "ResourcesManager", "UIManager", "MapCeil", "MovementTest", "GloableConstantUtils", "GloableUtils", "JsonConfigUtils", "TextLocalization", "UIAnimationUtils", "PopupWarningUI", "UIBase", "EditableComponentContainer", "EditableComponentContainerConfigure", "EditableComponentUI", "EditableComponentUIConfigure", "LoadingUI", "LoginUI", "MainUI", "MainUIEquipComponent" ]);
