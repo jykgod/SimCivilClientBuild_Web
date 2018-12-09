@@ -1,9 +1,0 @@
-{
-  "__type__": "cc.JsonAsset",
-  "_name": "ClientConfig",
-  "json": {
-    "ServerIP": "localhost:20170",
-    "OfflineMode": false,
-    "Test": true
-  }
-}
